@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Wang Yi's 3D Birthday Garden 🌷🐰🎮</title>
+  <meta name="description" content="Kỳ quan 3D sinh nhật huyền diệu dành riêng cho Wang Yi (04/10/2009)">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Core Libraries: Three.js, OrbitControls, GSAP (Loaded via classic scripts for 100% file:/// compatibility) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="night-mode">
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="webgl-container"></div>
+
+  <!-- Background Music Element -->
+  <audio id="bg-audio" loop preload="auto">
+    <source src="assets/music.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- ==================== 0. LOADING SCREEN ==================== -->
+  <div id="loading-screen" class="loading-overlay">
+    <div class="loader-content">
+      <div class="loader-bunny">🐰</div>
+      <h2 class="loader-title">Đang khởi tạo Thế Giới 3D của Wang Yi...</h2>
+      <div class="loader-bar-wrap">
+        <div class="loader-bar" id="load-progress-bar"></div>
+      </div>
+      <p class="loader-sub" id="load-status-text">Đang gieo hạt hoa tulip và thắp sáng bầu trời sao...</p>
+    </div>
+  </div>
+
+  <!-- ==================== 1. CINEMATIC INTRO OVERLAY ==================== -->
+  <div id="cinematic-overlay" class="cinematic-screen hidden">
+    <!-- Vignette & Cinematic Bars -->
+    <div class="cinema-bar top-bar"></div>
+    <div class="cinema-bar bottom-bar"></div>
+
+    <div class="intro-hero-card">
+      <div class="intro-sparkles">✨ 🌸 ✨</div>
+      <h3 class="intro-badge">SPECIAL 3D BIRTHDAY WORLD</h3>
+      <h1 class="intro-name text-gradient">WANG YI</h1>
+      <div class="intro-date">
+        <span>🌷 04 • 10 • 2009 🐰</span>
+      </div>
+      <p class="intro-tagline">“Một thế giới cổ tích nhỏ được tạo nên từ ngàn vì sao và hoa tươi, dành riêng cho cậu.”</p>
+      
+      <div class="intro-actions">
+        <button id="btn-enter-world" class="btn-primary pulse-btn" aria-label="Bước vào thế giới 3D">
+          <span class="btn-icon">🚀</span>
+          <span class="btn-text">ENTER WORLD ✨</span>
+        </button>
+      </div>
+
+      <div class="intro-tips">
+        <span>🎮 WASD / Mũi tên để điều khiển Thỏ</span> • 
+        <span>🖱️ Kéo chuột / Chạm để xoay camera 3D</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. MAIN 3D FLOATING HUD ==================== -->
+  <header id="main-hud" class="hud-header hidden">
+    <!-- Left: Brand Logo & Target Info -->
+    <div class="hud-left">
+      <div class="hud-brand" id="btn-hud-home" title="Nhìn toàn cảnh thế giới">
+        <span class="hud-bunny-icon">🐰</span>
+        <div class="hud-brand-text">
+          <span class="hud-brand-title">Wang Yi's World</span>
+          <span class="hud-badge">04/10/2009</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: 3D Camera Quick-Jump Nav Tabs -->
+    <nav class="hud-nav" aria-label="3D Zone Navigation">
+      <button class="nav-tab active" data-zone="garden" title="Đến Khu Vườn Hoa">
+        <i class="fa-solid fa-seedling"></i>
+        <span>Vườn Hoa</span>
+      </button>
+      <button class="nav-tab" data-zone="cottage" title="Đến Ngôi Nhà Của Thỏ">
+        <i class="fa-solid fa-house-chimney"></i>
+        <span>Nhà Thỏ</span>
+      </button>
+      <button class="nav-tab" data-zone="starIsland" title="Đến Đảo Ngàn Sao Lơ Lửng (Star Island)">
+        <i class="fa-solid fa-star"></i>
+        <span>Đảo Sao</span>
+      </button>
+      <button class="nav-tab" data-zone="plaza" title="Đến Quảng Trường & Bánh Sinh Nhật">
+        <i class="fa-solid fa-cake-candles"></i>
+        <span>Bánh Kem</span>
+      </button>
+      <button class="nav-tab" data-zone="mystery" id="nav-tab-mystery" title="✦ Wang Yi's Secret Island ✦ (Cần 50 điểm)">
+        <i class="fa-solid fa-gem" id="nav-mystery-icon"></i>
+        <span>✦ Đảo Bí Mật ✦</span>
+        <span class="lock-indicator" id="nav-mystery-lock">🔒</span>
+      </button>
+    </nav>
+
+    <!-- Right: Mini-Game Score, Shards, Fragments, Sky, Quality & Music Toggles -->
+    <div class="hud-right">
+      <!-- Mini Game Flower Counter Pill -->
+      <div class="score-pill-card" id="hud-score-card" title="Hoa sinh nhật thu thập (50 để mở cổng bí mật)">
+        <span class="score-icon">🌷</span>
+        <span class="score-val" id="hud-score-text">0</span>
+        <span class="score-max">/50</span>
+      </div>
+
+      <!-- Star Shards Pill (Star Island) -->
+      <div class="score-pill-card shard-pill" id="hud-shard-card" title="Mảnh sao (Star Shards) tìm được trên Đảo Sao">
+        <span class="score-icon">⭐</span>
+        <span class="score-val" id="hud-shard-text">0</span>
+        <span class="score-max">/5</span>
+      </div>
+
+      <!-- Memory Fragments Pill (Secret Island) -->
+      <div class="score-pill-card frag-pill" id="hud-frag-card" title="Mảnh ký ức (Memory Fragments) trên Đảo Bí Mật">
+        <span class="score-icon">✨</span>
+        <span class="score-val" id="hud-frag-text">0</span>
+        <span class="score-max">/5</span>
+      </div>
+
+      <!-- Free Camera vs Follow Bunny Toggle -->
+      <button id="btn-toggle-cam" class="hud-btn" title="Chuyển chế độ Camera: Theo sau Thỏ / Tự do xoay" aria-label="Toggle Camera Mode">
+        <i class="fa-solid fa-video"></i>
+      </button>
+
+      <!-- Day / Sunset / Night Sky Toggle -->
+      <button id="btn-toggle-sky" class="hud-btn" title="Đổi thời gian: Đêm sao / Hoàng hôn / Ngày" aria-label="Toggle Sky">
+        <span id="sky-mode-icon">🌙</span>
+      </button>
+
+      <!-- Graphics Quality Toggle (High/Med/Low) -->
+      <button id="btn-toggle-quality" class="hud-btn" title="Chất lượng đồ họa 3D" aria-label="Toggle Quality">
+        <span id="quality-label">HQ</span>
+      </button>
+
+      <!-- Music Switch -->
+      <button id="btn-toggle-music" class="hud-btn music-btn" title="Bật / Tắt Nhạc Nền" aria-label="Toggle Music">
+        <i class="fa-solid fa-music"></i>
+        <span class="music-wave">
+          <span></span><span></span><span></span>
+        </span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 3. FLOATING ACTION PROMPTS & IN-GAME HUD ==================== -->
+  <!-- Target Context Tooltip (Shows when hovering/near 3D objects) -->
+  <div id="interact-tooltip" class="interact-tooltip hidden">
+    <span class="tooltip-icon" id="tooltip-icon">✨</span>
+    <span class="tooltip-text" id="tooltip-text">Click to interact</span>
+  </div>
+
+  <!-- Mini Game Instructions Pill (Floating bottom center on desktop) -->
+  <div id="game-controls-hint" class="controls-hint-bar hidden">
+    <span>🐰 Điều khiển Thỏ: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> hoặc <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+    <span class="hint-divider">•</span>
+    <span>Thu thập: 🌷(+1) 🌹(+5) ⭐(+10) 💗(+15) để mở khóa quà bí mật!</span>
+    <button id="btn-hint-cheat" class="btn-mini-chip" title="Mở khóa nhanh 50 điểm để xem quà">🎁 Unlock 50</button>
+  </div>
+
+  <!-- Mobile On-Screen Virtual Controls -->
+  <div id="mobile-touch-dock" class="mobile-touch-dock hidden">
+    <!-- Virtual Joystick for touch move -->
+    <div class="touch-joystick-wrap" id="touch-joystick">
+      <div class="joystick-base">
+        <div class="joystick-stick" id="joystick-thumb"></div>
+      </div>
+    </div>
+
+    <!-- Quick Action Jump Button -->
+    <div class="touch-actions">
+      <button id="btn-touch-jump" class="touch-action-btn" aria-label="Bunny Jump">
+        <span>🐰 Nhảy</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 4. MODALS & POPUP OVERLAYS ==================== -->
+
+  <!-- A. SECRET LETTER MODAL (6-Phase 3D Presentation) -->
+  <div id="modal-letter" class="modal-overlay">
+    <div class="modal-dialog letter-dialog">
+      <button class="btn-close-modal" data-close="modal-letter" aria-label="Close Letter">&times;</button>
+      
+      <!-- Envelope Graphic with Radiant Wax Seal & Badge -->
+      <div class="envelope-container" id="envelope-container">
+        <div class="letter-pre-badge">FOR WANG YI 💌</div>
+        <div class="envelope-box floating-envelope" id="envelope-box">
+          <div class="envelope-top-flap" id="envelope-flap"></div>
+          <div class="envelope-burst-light" id="envelope-light"></div>
+          <div class="envelope-paper-peek">💌</div>
+          <div class="wax-seal radiant-seal"><span>WY</span></div>
+          <div class="envelope-label">Gửi Wang Yi 🌷 (04/10/2009)</div>
+        </div>
+        <button id="btn-open-wax" class="btn-primary pulse-btn" style="margin-top: 24px;">
+          <span>MỞ THƯ BÍ MẬT 💌</span>
+        </button>
+      </div>
+
+      <!-- Letter Content with Typewriter -->
+      <div class="letter-paper-wrap hidden" id="letter-paper-wrap">
+        <div class="letter-parchment">
+          <div class="parchment-decor">
+            <span>🌷</span>
+            <span>🐰</span>
+            <span>✨</span>
+          </div>
+          <div class="typewriter-body" id="typewriter-letter"></div>
+          <div class="letter-special-climax hidden" id="letter-climax">
+            <span class="climax-text">Happy 17th Birthday, Wang Yi. 🐰🌷✨</span>
+          </div>
+          <div class="parchment-footer">
+            <button id="btn-replay-typewriter" class="btn-chip">
+              <i class="fa-solid fa-rotate-left"></i> Đọc lại thư
+            </button>
+            <button id="btn-send-love" class="btn-chip love-chip">
+              <i class="fa-solid fa-heart text-pink"></i> Thả tim (<span id="love-count">0</span>)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. CAKE WISH CEREMONY MODAL -->
+  <div id="modal-cake" class="modal-overlay">
+    <div class="modal-dialog cake-modal-dialog">
+      <button class="btn-close-modal" data-close="modal-cake" aria-label="Close Cake Modal">&times;</button>
+      <div class="cake-ceremony-card">
+        <span class="badge-tag">🎂 17TH BIRTHDAY CEREMONY</span>
+        <h2 class="ceremony-heading">Make A Wish, Wang Yi! ✨</h2>
+        <p class="ceremony-desc">
+          Bấm vào các ngọn nến trên bánh 3D hoặc bấm nút dưới đây để thổi nến và gửi điều ước vào bầu trời sao nhé!
+        </p>
+
+        <div class="ceremony-actions">
+          <button id="btn-ceremony-blow" class="btn-primary pulse-btn">
+            <span class="btn-icon">💨</span>
+            <span class="btn-text">Thổi Nến (Blow Candles)</span>
+          </button>
+          <button id="btn-ceremony-relight" class="btn-glass hidden">
+            <span class="btn-icon">✨</span>
+            <span class="btn-text">Thắp Lại Nến</span>
+          </button>
+        </div>
+
+        <!-- Wish Input Field (Revealed after candles are blown) -->
+        <div class="wish-box hidden" id="ceremony-wish-box">
+          <h3 class="glow-text">🌟 ĐIỀU ƯỚC TUỔI 17 🌟</h3>
+          <p>Hãy viết điều ước chân thành nhất của Wang Yi vào đây:</p>
+          <div class="wish-form">
+            <input type="text" id="input-wish-text" placeholder="Ví dụ: Tuổi 17 thật rực rỡ, hạnh phúc và bình yên..." maxlength="100">
+            <button id="btn-launch-wish" class="btn-primary">
+              <span>Bắn Sao Băng Ước Nguyện 🚀⭐</span>
+            </button>
+          </div>
+          <div class="wish-sent-msg hidden" id="wish-sent-indicator">
+            ✨ Điều ước của cậu đã bay vút lên bầu trời và hòa vào chòm sao Wang Yi!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C. MYSTERY / SECRET ISLAND PORTAL MODAL -->
+  <div id="modal-mystery" class="modal-overlay">
+    <div class="modal-dialog mystery-dialog">
+      <button class="btn-close-modal" data-close="modal-mystery" aria-label="Close Mystery">&times;</button>
+      <div class="mystery-content" id="mystery-content-locked">
+        <div class="mystery-lock-icon">🌀🔒</div>
+        <h2>✦ CỔNG ĐẢO BÍ MẬT ĐANG PHONG ẤN ✦</h2>
+        <p>Thu thập đủ <strong>50 đóa hoa sinh nhật</strong> trong Mini Game để kích hoạt vòng tròn ma thuật dịch chuyển đến <strong>Wang Yi's Secret Island</strong>!</p>
+        <div class="score-reminder">Điểm hiện tại: <span id="mystery-score-cur">0</span> / 50</div>
+        <button class="btn-primary" onclick="app.closeModal('modal-mystery'); app.focusGame();">
+          🎮 Tiếp tục chơi Mini Game
+        </button>
+      </div>
+
+      <div class="mystery-content hidden" id="mystery-content-unlocked">
+        <div class="mystery-sparkle-icon">✦ 🌌 ✦</div>
+        <h2 class="text-gradient">✦ SECRET DISCOVERED ✦</h2>
+        <h3 style="color: #ffd166; font-size: 1.4rem; margin-bottom: 12px;">WANG YI'S SECRET ISLAND</h3>
+        <p class="unlocked-text">
+          Vòng tròn ma thuật đã kích hoạt! Cánh cổng bí mật dẫn đến hòn đảo huyền diệu dành riêng cho Wang Yi tuổi 17 đã mở toang!
+        </p>
+        <div class="mystery-prize-actions">
+          <button class="btn-primary pulse-btn" onclick="app.closeModal('modal-mystery'); app.flyToZone('mystery');">
+            🌀 Dịch chuyển đến Secret Island
+          </button>
+          <button class="btn-glass" id="btn-mystery-letter">
+            💌 Mở Bức Thư Bí Mật Ngay
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D. EASTER EGG MODAL -->
+  <div id="modal-easter-egg" class="modal-overlay">
+    <div class="modal-dialog">
+      <button class="btn-close-modal" data-close="modal-easter-egg" aria-label="Close Easter Egg">&times;</button>
+      <div class="egg-visual">🐰✨</div>
+      <h2 class="egg-title" id="egg-title">Trứng Phục Sinh</h2>
+      <p class="egg-message" id="egg-message">Lời nhắn bí mật...</p>
+      <button class="btn-primary" onclick="app.closeModal('modal-easter-egg');">
+        <span>Tuyệt vời ✨</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- E. MOON PLATFORM WISH MODAL -->
+  <div id="modal-moon-wish" class="modal-overlay">
+    <div class="modal-dialog moon-wish-dialog">
+      <button class="btn-close-modal" data-close="modal-moon-wish" aria-label="Close Moon Wish">&times;</button>
+      <div class="moon-wish-icon">🌙✨</div>
+      <h2 class="moon-wish-title">MAKE A WISH</h2>
+      <p class="moon-wish-sub">Đứng dưới vầng trăng Đảo Sao, hãy gửi gắm một điều ước vào vũ trụ bao la:</p>
+      <div class="moon-wish-input-wrap">
+        <input type="text" id="input-moon-wish" placeholder="Điều ước thầm kín nhất của Wang Yi..." maxlength="120">
+        <button id="btn-submit-moon-wish" class="btn-primary pulse-btn">
+          <span>✨ Gửi Điều Ước (Make A Wish)</span>
+        </button>
+      </div>
+      <div class="moon-wish-sent hidden" id="moon-wish-sent">
+        🌠 <em>“Your wish is somewhere among the stars.”</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- F. OBSERVATORY TELESCOPE VIEWFINDER MODAL -->
+  <div id="modal-observatory" class="modal-overlay">
+    <div class="modal-dialog observatory-dialog">
+      <button class="btn-close-modal" data-close="modal-observatory" aria-label="Close Observatory">&times;</button>
+      <div class="telescope-viewfinder">
+        <div class="viewfinder-crosshair"></div>
+        <div class="viewfinder-lens">
+          <div class="celestial-nebula"></div>
+          <div class="telescope-target" id="tele-constellation" title="Click chòm sao bí mật!">
+            <span class="constellation-star c1">⭐</span>
+            <span class="constellation-star c2">✨</span>
+            <span class="constellation-star c3">⭐</span>
+            <span class="constellation-star c4">🌟</span>
+            <span class="constellation-star c5">⭐</span>
+          </div>
+        </div>
+      </div>
+      <div class="observatory-info">
+        <h3>🔭 CELESTIAL OBSERVATORY</h3>
+        <p>Đang quét bầu trời đêm tuổi 17... Nhấp vào các chòm sao kỳ diệu để giải mã thông điệp bí mật!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- G. FINAL WISH FLOATING BUTTON & MODAL -->
+  <div id="final-wish-dock" class="final-wish-dock hidden">
+    <button id="btn-final-wish-trigger" class="btn-primary pulse-btn btn-final-wish">
+      <span>✦ MAKE ONE LAST WISH ✦</span>
+    </button>
+  </div>
+
+  <div id="modal-final-wish" class="modal-overlay">
+    <div class="modal-dialog final-wish-dialog">
+      <div class="final-wish-stars">✦ 🌠 ✦</div>
+      <h2 class="text-gradient">✦ THE FINAL WISH ✦</h2>
+      <p class="final-quote">
+        “Whatever comes next, I hope it brings you beautiful memories.”
+      </p>
+      <p class="final-sub">
+        Gửi Wang Yi, cảm ơn cậu đã đồng hành qua từng chặng đường kỳ diệu của thế giới sinh nhật tuổi 17 này.
+      </p>
+      <button id="btn-trigger-grand-ending" class="btn-primary pulse-btn" style="margin-top: 20px;">
+        <span>Ngắm Toàn Cảnh Vũ Trụ Sinh Nhật 🌌</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- H. GRAND ENDING OVERLAY -->
+  <div id="grand-ending-overlay" class="grand-ending-overlay hidden">
+    <div class="grand-ending-card">
+      <h1 class="grand-name text-gradient">WANG YI</h1>
+      <h2 class="grand-date">04 • 10 • 2026</h2>
+      <h3 class="grand-sub">Happy 17th Birthday 🐰🌷✨</h3>
+      <p class="grand-wish">Mãi mãi rạng rỡ và hạnh phúc như vì sao sáng nhất trên bầu trời đêm.</p>
+      <button id="btn-return-world" class="btn-glass" style="margin-top: 28px;">
+        <span>Trở lại ngắm nhìn thế giới 🌟</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Main JavaScript Application -->
+  <script src="script.js"></script>
+</body>
+</html>
